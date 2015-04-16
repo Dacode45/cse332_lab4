@@ -8,8 +8,13 @@ Defines function for playing rounds, including before, during and after. This is
 #include "stdafx.h"
 #include "Game.h"
 #include "FiveCardDraw.h"
+#include <algorithm>
+#include <iostream>
 
 //If both players exist, compare their hands
+const unsigned int this_games_anti = 1;
+
+
 bool FiveCardDraw::playerComparator(std::shared_ptr<player> p1, std::shared_ptr<player> p2){
 	if (!p1){
 		return false;
@@ -24,7 +29,9 @@ bool FiveCardDraw::playerComparator(std::shared_ptr<player> p1, std::shared_ptr<
 }
 
 //Give the dealer all the cards
-FiveCardDraw::FiveCardDraw() :dealer(0){
+FiveCardDraw::FiveCardDraw() :dealer(0), current_bet(0), ante(this_games_anti){
+
+	pot = 0;
 	for (int suit = 1; suit <= 4; suit++){
 		for (int rank = 1; rank <= 13; rank++){
 			Card c = Card(static_cast<Card::SUIT>(suit), static_cast<Card::RANK>(rank));
@@ -36,58 +43,55 @@ FiveCardDraw::FiveCardDraw() :dealer(0){
 	main_deck.shuffle();
 }
 
+void FiveCardDraw::play_round(){
+
+	pot = 0;
+	num_players_fold = 0;
+
+	if (int brError = before_round()){
+
+		handleErrMessages(brError);
+
+	}
+	if (int rError = round()){
+
+		handleErrMessages(rError);
+
+	}
+	if (int arError = after_round()){
+
+		handleErrMessages(arError);
+
+	}
+}
+
 //Do everything that happens before a turn
 int FiveCardDraw::before_turn(player &p){
+
+	if (p.will_fold)
+		return SUCCESS;
 
 	//Show the players cards
 	std::cout << p.name << " : " << p.hand << std::endl;
 
-	bool valid_response = false;
 	size_t num_cards_to_discard = 0;
 
 	//If it's a real player
 	if (!p.isrobot){
+		bool valid_discards = false;
+	
+		auto valid_range = [](int i){if (0 <= i && i < 5){ return true; } else return false; };
+			num_cards_to_discard = prompt_int("How many cards would you like to discard?\n", valid_range, "You can only enter numbers 0-4");
 
-		do{
-
-			//Ask the user for input
-			std::cout << "How many cards would you like to discard?\n" << std::endl;
-			std::string num_cards;
-			std::cin >> num_cards;
-			try{
-
-				num_cards_to_discard = stoi(num_cards);
-				//Make sure the user gave a valid input
-				if (0 <= num_cards_to_discard && num_cards_to_discard < 5){
-					valid_response = true;
-				}
-				else
-					throw BADINPUT;
-
-			}
-
-			catch (const std::invalid_argument& ia){
-				std::cout << "You must enter a number.\n" << ia.what() << std::endl;
-			}
-			catch (...){
-				std::cout << "Invalid Input\nYou may discard 0-4 cards\n" << std::endl;
-
-			}
-
-		} while (!valid_response);
-
-		valid_response = false;
-
+		
 		//Discard however many cards the user wanted to discard
 		while (num_cards_to_discard){
-			std::cout << p.name << " : " << p.hand << std::endl;
-			std::cout << "Which cards would you like to discard?\n" << std::endl;
-			std::string response;
-			std::cin >> response;
+			
+			std::cout << "Cards:\n" << p.hand << std::endl;
+			size_t position = prompt_int("Which card would you like to discard?\n", "");
 
 			//Remove the card from the position specified
 			try{
-				size_t position = stoi(response);
 				Card actual_card = p.hand[position];
 				discard_deck.add_card(actual_card);
 				p.hand.remove_card(position);
@@ -127,6 +131,125 @@ int FiveCardDraw::before_turn(player &p){
 	return SUCCESS;
 }
 
+
+
+void FiveCardDraw::betting_phase(player& p){
+
+	if (p.will_fold)
+		return;
+
+	//all other players folded
+	if (num_players_fold == players.size() - 1){
+		return;
+
+	}
+		
+	std::cout << "Player " << p.name << " turn" << std::endl;
+	std::cout << "You have " << p.chips << std::endl;
+	std::cout << "Hand: " << p.hand;
+
+	if (!p.isrobot && !p.will_fold){
+
+		
+
+		bool player_done = false;
+
+		auto yes_or_no = [](std::string str){
+			return (str.find("yes") || str.find("no"));
+		};
+		std::string fold_decision = " " + prompt_string("Would you like to fold", yes_or_no, "Please enter (yes/no)");
+		
+		if (fold_decision.find("yes")){
+			p.will_fold = true;
+			player_done = true;
+			num_players_fold++;
+		}
+
+		
+		//theres a current bet on table
+		//player can either raise, call, or check if you have no money
+		if (player_has_bet){
+
+			//we have gone full circle;
+			if (highest_better != nullptr && p == *highest_better){
+				player_has_bet = false;
+				highest_better = nullptr;
+			}
+			if (player_done)
+				return;
+
+			//check if player has enough money
+			if (p.chips < current_bet - p.chips_bet){
+				add_to_pot(p, p.chips - p.chips_bet);
+				std::cout << "You don't have enough money to call, you'll have to go all in" << std::endl;
+				player_done = true;
+			}
+			else if (p.chips == current_bet - p.chips_bet){//only have enough money to call
+				add_to_pot(p, p.chips - p.chips_bet);
+				std::cout << "You don't have enough money to raise, you'll have to go all in" << std::endl;
+				player_done = true;
+			}
+			else{
+				auto bet_or_check = [](std::string str){
+					str = " " + str;
+					if (str.find("call") || str.find("raise")){
+						return true;
+					}
+					else
+						return false;
+				};
+
+				std::string decision = " " + prompt_string("Would you like to call, or raise", bet_or_check, "Please enter (call/raise)");
+
+				if (decision.find("call")){
+					add_to_pot(p, current_bet - p.chips_bet);
+					player_done = true;
+				}
+				else{
+					auto valid_raise = [](int i){
+						return(i == 1 || i == 2);
+					};
+					int raise = prompt_int("How much would you like to raise", valid_raise, "You can only enter 1 or 2");
+					current_bet += raise;
+					highest_better = &p;
+					player_has_bet = true;
+					add_to_pot(p, current_bet - p.chips_bet);
+					player_done = true;
+				}
+			}
+		}
+		else{ // players can bet or check
+			auto bet_or_check = [](std::string str){
+				str = " " + str;
+				if (str.find("check") || str.find("bet")){
+					return true;
+				}
+				else
+					return false;
+			};
+			std::string decision = " " + prompt_string("Would you like to check, or bet", bet_or_check, "Please enter (check/bet)");
+
+			if (decision.find("check")){
+				player_done = true;
+			}
+			else{
+				auto valid_raise = [](int i){
+					return(i == 1 || i == 2);
+				};
+				int raise = prompt_int("How much would you like to bet", valid_raise, "You can only enter 1 or 2");
+				current_bet += raise;
+				add_to_pot(p, current_bet - p.chips_bet);
+				player_done = true;
+				highest_better = &p;
+				player_has_bet = true;
+			}
+		}
+	}
+	
+	std::cout << "You have " << p.chips << "\n\tand have bet " << p.chips_bet << std::endl;
+
+}
+
 //Do everything required during a turn
 int FiveCardDraw::turn(player &p){
 	int card_to_deal = num_cards_in_hand - p.hand.size();
@@ -154,10 +277,15 @@ int FiveCardDraw::after_turn(player &p){
 
 //Do deck shuffling and dealing
 int FiveCardDraw::before_round(){
+	
+	pot = 0;
+	highest_bet = 0;
 	main_deck.shuffle();
 	size_t start = dealer;
 	start = start % players.size();
 	int cards_to_deal = players.size() * num_cards_in_hand;
+
+	
 
 	//Deal to the players one at a time
 	do{
@@ -167,7 +295,35 @@ int FiveCardDraw::before_round(){
 	} while (cards_to_deal);
 
 	//Call before turn on every player
+
+	//ante reset folding
+	for each (auto p in players)
+	{
+		p->will_fold = false;
+		if (p->chips > 0){
+			add_to_pot(*p, ante);
+		}
+		else{
+			remove_or_reset(*p);
+		}
+	}
+
+	//betting phase
+	int i = 0;
+	bool gone_around_once = false;
+	while (!gone_around_once && highest_better == nullptr){
+
+		betting_phase(*players[i]);
+		if (i + 1 == players.size())
+			gone_around_once = true;
+
+		i = (i + 1) % players.size();
+
+	}
+
+	//before_turn
 	for (auto p = players.begin(); p != players.end(); p++){
+		
 		before_turn(*(*p));
 	}
 
@@ -190,21 +346,44 @@ int FiveCardDraw::round(){
 //Get a winner and print each players hand, let players leave/join, includes auto player functionality
 int FiveCardDraw::after_round(){
 
-	std::vector<std::shared_ptr<player>> temp_players(players);
+	std::cout << "Current pot is " << pot;
+
+	//only those players who didn't fold can be accessed
+	auto strip_folders = [](std::shared_ptr<player> p){
+		return (!p->will_fold);
+	};
+	std::vector<std::shared_ptr<player>> temp_players;
+	std::copy_if(players.begin(), players.end(), std::back_inserter(temp_players), strip_folders);
 
 	//Sort the players by hand rank so the winner is first
 	std::sort(temp_players.begin(), temp_players.end(), &FiveCardDraw::playerComparator);
 
 	//Give each player their wins and losses and assign probabilities for players in case they are auto
+	unsigned int winnerhand;
+	std::vector<std::shared_ptr<player>> winners;
+
 	for (auto p = temp_players.begin(); p != temp_players.end(); ++p){
 		if (p == temp_players.begin()){
 			std::cout << "\nPlayer: " << (*p)->name << " won" << std::endl;
 			(*(*p)).games_won++;
 			(*p)->my_win_low = player::win_low::win;
+			winnerhand = checkHand((*temp_players.begin())->hand.getCards());
+			winners.push_back(*p);
 		}
 		else{
-			(*(*p)).games_lost++;
-			(*p)->my_win_low = player::win_low::ok;
+			unsigned int myhand = checkHand((*p)->hand.getCards());
+			if (myhand == winnerhand){
+				(*(*p)).games_won++;
+				(*p)->my_win_low = player::win_low::win;
+				winners.push_back(*p);
+				std::cout << "\nPlayer: " << (*p)->name << " won" << std::endl;
+
+			}
+			else{
+				(*(*p)).games_lost++;
+				(*p)->my_win_low = player::win_low::ok;
+
+			}
 		}
 
 		if (p == temp_players.end() - 1){
@@ -212,6 +391,17 @@ int FiveCardDraw::after_round(){
 			(*p)->my_win_low = player::win_low::low;
 		}
 
+		(*(*p)).chips_bet = 0;
+		(*(*p)).will_fold = false;
+
+	}
+
+	int num_winners = winners.size();
+	int money_per_winner = pot / num_winners;
+
+	for each (std::shared_ptr<player> p in winners)
+	{
+		p->chips += money_per_winner;
 	}
 
 	//Prints players hand types
@@ -357,4 +547,20 @@ int FiveCardDraw::after_round(){
 
 
 	return SUCCESS;
+}
+
+void FiveCardDraw::remove_or_reset(player&p){
+	if(!p.isrobot){
+		std::cout << "Hi. You're out of money friend. Would you like some more (yes/no)" << std::endl;
+		std::string more_money;
+		std::cin >> more_money;
+		if (more_money.find("no")){
+			std::cout << "Goodbye then \n";
+			remove_player(p.name.c_str());
+		}
+		else
+			p.reset();
+	}
+	else
+		remove_player(p.name.c_str());
 }

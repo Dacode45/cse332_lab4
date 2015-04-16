@@ -20,6 +20,12 @@ class FiveCardDraw : public Game{
 
 private:
 	int num_cards_in_hand = 5;
+	int num_players_fold = 0;
+	unsigned int ante;
+	unsigned int current_bet;
+	bool player_has_bet;
+	player* highest_better = nullptr;
+
 
 
 protected:
@@ -27,7 +33,7 @@ protected:
 	size_t dealer;
 	Deck main_deck;
 	Deck discard_deck;
-
+	unsigned int highest_bet;
 	//If both players exist, compare their hands
 	static bool playerComparator(std::shared_ptr<player> p1, std::shared_ptr<player> p2);
 
@@ -35,6 +41,8 @@ public:
 
 	//Give the dealer all the cards
 	FiveCardDraw();
+
+	virtual void play_round();
 
 	virtual int before_turn(player &p);
 
@@ -48,6 +56,10 @@ public:
 	virtual int round();
 
 	virtual int after_round();
+
+	virtual void betting_phase(player& p);
+
+	void remove_or_reset(player& p);
 
 };
 

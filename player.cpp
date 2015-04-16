@@ -10,7 +10,8 @@ Defines methods from player.h for creating a player object that can play the gam
 #include <iostream>
 
 //Constructor, takes in a string
-player::player(std::string n){
+const int starting_chips = 20;
+player::player(std::string n):chips_bet(0){
 	
 	//If they're a robot remove the *
 	if (n.back() == '*'){
@@ -21,6 +22,7 @@ player::player(std::string n){
 	name = n;
 	games_lost = 0;
 	games_won = 0;
+	chips = starting_chips;
 
 	std::string save;
 	//Read file
@@ -61,6 +63,18 @@ player::player(std::string n){
 				handleErrMessages(e);
 
 			}
+			try{
+
+				int c = std::stoi(old_player.get("chips"));
+				games_won = chips;
+
+			}
+			catch (int e){
+
+				//do nothing if you can't get it
+				handleErrMessages(e);
+
+			}
 
 		}
 		catch (int e){
@@ -87,6 +101,7 @@ void player::save(){
 	obj["name"] = name;
 	obj["games_lost"] = std::to_string(games_lost);
 	obj["games_won"] = std::to_string(games_won);
+	obj["chips"] = std::to_string(chips);
 	std::string json = json_parser::export_json(obj);
 
 	std::ofstream out;
@@ -191,6 +206,10 @@ void player::clear_decision(){
 
 	card_discard_positions.clear();
 
+}
+
+void player::reset(){
+	chips = 20;
 }
 
 //Define equivalence operator based on name

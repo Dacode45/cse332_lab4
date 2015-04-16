@@ -13,15 +13,19 @@ Base class for playing of a generic card game that has methods that are used in 
 #include "player.h"
 #include "cards.h"
 #include <regex>
+#include <functional>
 
 class Game{
 
 //Define protected fields
 protected:
 
+	unsigned int pot;
 	static std::shared_ptr < Game > game;
 	Deck main_deck;
 	std::vector<std::shared_ptr<player>> players;
+	
+	
 
 //Define public methods for game class
 public:
@@ -41,12 +45,27 @@ public:
 
 	virtual ~Game();
 
+	virtual void play_round(){}
+
 	virtual int before_turn(player &p){ return SUCCESS; }
 	virtual int turn(player &p){ return SUCCESS; }
 	virtual int after_turn(player &p){ return SUCCESS; }
 	virtual int before_round(){ return SUCCESS; }
 	virtual int round(){ return SUCCESS; }
 	virtual int after_round(){ return SUCCESS; }
+
+	virtual void add_to_pot(player&, unsigned int amount);
+
+	int isValidNumber(std::string str);
+	std::string prompt_string(const char* message, std::function<bool(std::string)> predicate, const char* err_message);
+	std::string prompt_string(const char* message, const char* err_message);
+
+	int prompt_int(const char* message, std::function<bool(int)> predicate, const char* err_message);
+	int prompt_int(const char* message, const char* err_message);
+
+
+
+	//virtual void play_round();
 
 };
 

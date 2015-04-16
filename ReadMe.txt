@@ -58,3 +58,6 @@ r : 2H 3S 6H 7H QS
 
 y : 5S 6D 10H JC JS"
 Shows auto players changing their hands based on the getdecision method
+
+
+If the pot can't be split evenly, we just do integer division and hope it works out.

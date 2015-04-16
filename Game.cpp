@@ -96,6 +96,68 @@ void Game::add_player(const char* name){
 	 }
  }
 
+
+ void Game::add_to_pot(player& p, unsigned int amount){
+	 p.chips -= amount;
+	 p.chips_bet += amount;
+	 pot += amount;
+ }
+
+ //will throw if not 
+ int Game::isValidNumber(std::string str){
+	 return std::stoi(str);
+ }
+
+ std::string Game::prompt_string(const char* message,  std::function<bool(std::string)> predicate, const char* err_message = "bad input."){
+	 bool valid_input = false;
+	 std::string answer;
+	 do{
+		 std::cout << std::endl << message << std::endl;
+		 std::ws(std::cin);
+		 std::getline(std::cin, answer);
+		 
+		 
+		 if (predicate(answer)){
+
+			 return answer;
+		 }
+		 else{
+			 std::cout << err_message << "\nTry again" << std::endl;
+		 }
+	 } while (!valid_input);
+	 return answer;
+ }
+
+ std::string Game::prompt_string(const char* message, const char* err_message){
+	 std::function<bool(std::string)> always_valid = [](std::string){return true;};
+	 return prompt_string(message, always_valid, err_message);
+ }
+ int Game::prompt_int(const char* message, std::function<bool(int)> predicate, const char* err_message = "bad input."){
+	 bool valid_input = false;
+	 int num;
+	 do{
+		 std::string num_str = prompt_string(message, err_message);
+		 try{
+			 num = isValidNumber(num_str);
+			 if(predicate(num)){
+
+				 return num;
+			 }
+			 else
+				 throw;
+		 }
+		 catch (...){
+			 std::cout << err_message << "\nTry again" << std::endl;
+		 }
+	 } while (!valid_input);
+	 return num;
+ }
+
+ int Game::prompt_int(const char* message, const char* err_message){
+	 std::function<bool(int)> always_valid = [](int){return true; };
+	 return prompt_int(message, always_valid, err_message);
+ }
+
 Game::~Game(){
 		//Doesn't do anything
 	}
