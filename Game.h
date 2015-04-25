@@ -12,6 +12,9 @@ Base class for playing of a generic card game that has methods that are used in 
 #include "Deck.h"
 #include "player.h"
 #include "cards.h"
+#include "card.h"
+#include <iostream>
+#include <string>
 #include <regex>
 #include <functional>
 
@@ -21,11 +24,22 @@ class Game{
 protected:
 
 	unsigned int pot;
+	int num_players_fold = 0;
 	static std::shared_ptr < Game > game;
 	Deck main_deck;
 	std::vector<std::shared_ptr<player>> players;
-	
-	
+	Deck discard_deck;
+	bool player_has_bet = false;
+	player* highest_better = nullptr;
+	unsigned int current_bet;
+	int num_cards_in_hand;
+	unsigned int highest_bet;
+	size_t dealer;
+	unsigned int ante;
+
+	static bool playerComparator(std::shared_ptr<player> p1, std::shared_ptr<player> p2);
+
+
 
 //Define public methods for game class
 public:
@@ -34,6 +48,7 @@ public:
 	
 	static std::shared_ptr<Game> instance();
 
+	
 	static void start_game(const char* type);
 
 	static void stop_game();
@@ -44,17 +59,21 @@ public:
 	std::string print_players();
 
 	virtual ~Game();
+	Game();
 
-	virtual void play_round(){}
+	virtual void play_round();
 
-	virtual int before_turn(player &p){ return SUCCESS; }
-	virtual int turn(player &p){ return SUCCESS; }
-	virtual int after_turn(player &p){ return SUCCESS; }
-	virtual int before_round(){ return SUCCESS; }
-	virtual int round(){ return SUCCESS; }
-	virtual int after_round(){ return SUCCESS; }
+	virtual int before_turn(player &p);
+	virtual int turn(player &p);
+	virtual int after_turn(player &p);
+	virtual int before_round();
+	virtual int round();
+	virtual int after_round();
+	virtual void betting_phase(player& p);
 
 	virtual void add_to_pot(player&, unsigned int amount);
+
+	virtual void remove_or_reset(player& p);
 
 	int isValidNumber(std::string str);
 	std::string prompt_string(const char* message, std::function<bool(std::string)> predicate, const char* err_message);

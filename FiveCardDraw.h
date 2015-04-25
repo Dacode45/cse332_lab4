@@ -8,10 +8,7 @@ Game class, contains a deck, methods for taking turns, dealing cards to players,
 #ifndef FIVECARDDRAW_H
 #define FIVECARDDRAW_H
 
-#include "card.h"
-#include <iostream>
-#include <string>
-#include "cards.h"
+
 #include "Game.h"
 
 
@@ -35,13 +32,13 @@ protected:
 	Deck discard_deck;
 	unsigned int highest_bet;
 	//If both players exist, compare their hands
-	static bool playerComparator(std::shared_ptr<player> p1, std::shared_ptr<player> p2);
+	//static bool playerComparator(std::shared_ptr<player> p1, std::shared_ptr<player> p2);
 
 public:
 
 	//Give the dealer all the cards
 	FiveCardDraw();
-
+/*
 	virtual void play_round();
 
 	virtual int before_turn(player &p);
@@ -59,7 +56,7 @@ public:
 
 	virtual void betting_phase(player& p);
 
-	void remove_or_reset(player& p);
+	virtual void remove_or_reset(player& p);*/
 
 };
 
