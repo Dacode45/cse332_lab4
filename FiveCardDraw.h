@@ -23,7 +23,7 @@ private:
 	int num_players_fold = 0;
 	unsigned int ante;
 	unsigned int current_bet;
-	bool player_has_bet;
+	bool player_has_bet=false;
 	player* highest_better = nullptr;
 
 

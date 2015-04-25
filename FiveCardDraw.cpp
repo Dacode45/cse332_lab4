@@ -14,7 +14,9 @@ Defines function for playing rounds, including before, during and after. This is
 //If both players exist, compare their hands
 const unsigned int this_games_anti = 1;
 
-
+/*
+Compares two players by the poker rank of their hands
+*/
 bool FiveCardDraw::playerComparator(std::shared_ptr<player> p1, std::shared_ptr<player> p2){
 	if (!p1){
 		return false;
@@ -43,6 +45,9 @@ FiveCardDraw::FiveCardDraw() :dealer(0), current_bet(0), ante(this_games_anti){
 	main_deck.shuffle();
 }
 
+/*
+Plays a round of the game with before_round, round, and after_round all being called
+*/
 void FiveCardDraw::play_round(){
 
 	pot = 0;
@@ -72,6 +77,7 @@ int FiveCardDraw::before_turn(player &p){
 		return SUCCESS;
 
 	//Show the players cards
+	std::cout << "Player " << p.name << " turn" << std::endl;
 	std::cout << p.name << " : " << p.hand << std::endl;
 
 	size_t num_cards_to_discard = 0;
@@ -145,7 +151,7 @@ void FiveCardDraw::betting_phase(player& p){
 	}
 		
 	std::cout << "Player " << p.name << " turn" << std::endl;
-	std::cout << "You have " << p.chips << std::endl;
+	std::cout << "You have " << p.chips << " chips" << std::endl;
 	std::cout << "Hand: " << p.hand;
 
 	if (!p.isrobot && !p.will_fold){
@@ -157,15 +163,20 @@ void FiveCardDraw::betting_phase(player& p){
 		auto yes_or_no = [](std::string str){
 			return (str.find("yes") || str.find("no"));
 		};
-		std::string fold_decision = " " + prompt_string("Would you like to fold", yes_or_no, "Please enter (yes/no)");
-		
-		if (fold_decision.find("yes")){
+
+		//First asks the user if they want to fold
+		std::string fold_decision = "" + prompt_string("Would you like to fold", yes_or_no, "Please enter (yes/no)");
+		if (!fold_decision.compare("yes")){
+			std::cout << "Found a yes " << fold_decision << std::endl;
+
 			p.will_fold = true;
 			player_done = true;
 			num_players_fold++;
+			return;
 		}
 
-		
+		std::cout << "has bet " << player_has_bet << std::endl;
+
 		//theres a current bet on table
 		//player can either raise, call, or check if you have no money
 		if (player_has_bet){
@@ -219,6 +230,9 @@ void FiveCardDraw::betting_phase(player& p){
 			}
 		}
 		else{ // players can bet or check
+			std::cout << "Inside else " << fold_decision << std::endl;
+
+
 			auto bet_or_check = [](std::string str){
 				str = " " + str;
 				if (str.find("check") || str.find("bet")){
@@ -246,7 +260,7 @@ void FiveCardDraw::betting_phase(player& p){
 		}
 	}
 	
-	std::cout << "You have " << p.chips << "\n\tand have bet " << p.chips_bet << std::endl;
+	std::cout << "You have " << p.chips << " chips\n\tand have bet " << p.chips_bet << std::endl;
 
 }
 
@@ -549,6 +563,10 @@ int FiveCardDraw::after_round(){
 	return SUCCESS;
 }
 
+/*
+Asks a player if they want more chips
+If they do call reset, else remove them. Auto removes robots
+*/
 void FiveCardDraw::remove_or_reset(player&p){
 	if(!p.isrobot){
 		std::cout << "Hi. You're out of money friend. Would you like some more (yes/no)" << std::endl;

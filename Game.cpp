@@ -53,7 +53,7 @@ std::string Game::print_players(){
 
 }
 
- //Reset the game
+//Reset the game
 void Game::stop_game(){
 	if (game){
 		game.reset();
@@ -96,7 +96,9 @@ void Game::add_player(const char* name){
 	 }
  }
 
-
+ /*
+ Takes the specified number of chips from the player, adds it to the amount they have bet, and adds it to the pot
+ */
  void Game::add_to_pot(player& p, unsigned int amount){
 	 p.chips -= amount;
 	 p.chips_bet += amount;
@@ -107,7 +109,10 @@ void Game::add_player(const char* name){
  int Game::isValidNumber(std::string str){
 	 return std::stoi(str);
  }
-
+ /*
+ Takes in a message to prompt users with, a function to check their input, and an error message
+ Return the users answer if they responded correctly, otherwise keeps prompting the user
+ */
  std::string Game::prompt_string(const char* message,  std::function<bool(std::string)> predicate, const char* err_message = "bad input."){
 	 bool valid_input = false;
 	 std::string answer;
@@ -118,7 +123,6 @@ void Game::add_player(const char* name){
 		 
 		 
 		 if (predicate(answer)){
-
 			 return answer;
 		 }
 		 else{
@@ -128,10 +132,20 @@ void Game::add_player(const char* name){
 	 return answer;
  }
 
+ /*
+ Method that takes in a message and error message
+ Creates an always valid predicate and then calls the more robust prompt_string method
+ */
  std::string Game::prompt_string(const char* message, const char* err_message){
 	 std::function<bool(std::string)> always_valid = [](std::string){return true;};
 	 return prompt_string(message, always_valid, err_message);
  }
+
+ /*
+ Takes a message to promt the user with, a function to test their input, and an error message
+ If the user enters a valid number and fulfills the predicate, returns their input
+ If not continues to prompt the user
+ */
  int Game::prompt_int(const char* message, std::function<bool(int)> predicate, const char* err_message = "bad input."){
 	 bool valid_input = false;
 	 int num;
@@ -153,11 +167,16 @@ void Game::add_player(const char* name){
 	 return num;
  }
 
+ /*
+ For when the program does not specify a function for valid inputs
+ Creates an always valid functions and then calls the other prompt_int function
+ */
  int Game::prompt_int(const char* message, const char* err_message){
 	 std::function<bool(int)> always_valid = [](int){return true; };
 	 return prompt_int(message, always_valid, err_message);
  }
 
+//Destructor
 Game::~Game(){
 		//Doesn't do anything
 	}
