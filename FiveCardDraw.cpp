@@ -141,13 +141,15 @@ int FiveCardDraw::before_turn(player &p){
 
 void FiveCardDraw::betting_phase(player& p){
 
-	if (p.will_fold)
+	if (p.will_fold){
+		std::cout << "this player folded " << p.hand;
 		return;
+	}
 
 	//all other players folded
 	if (num_players_fold == players.size() - 1){
+		std::cout << "Other players all folded " << p.hand;
 		return;
-
 	}
 		
 	std::cout << "Player " << p.name << " turn" << std::endl;
@@ -161,11 +163,11 @@ void FiveCardDraw::betting_phase(player& p){
 		bool player_done = false;
 
 		auto yes_or_no = [](std::string str){
-			return (str.find("yes") || str.find("no"));
+			return (str == "yes" || str == "no");
 		};
 
 		//First asks the user if they want to fold
-		std::string fold_decision = "" + prompt_string("Would you like to fold", yes_or_no, "Please enter (yes/no)");
+		std::string fold_decision = prompt_string("Would you like to fold", yes_or_no, "Please enter (yes/no)");
 		if (!fold_decision.compare("yes")){
 			std::cout << "Found a yes " << fold_decision << std::endl;
 
@@ -202,17 +204,16 @@ void FiveCardDraw::betting_phase(player& p){
 			}
 			else{
 				auto bet_or_check = [](std::string str){
-					str = " " + str;
-					if (str.find("call") || str.find("raise")){
+					if (str == "call" || str == "raise"){
 						return true;
 					}
 					else
 						return false;
 				};
 
-				std::string decision = " " + prompt_string("Would you like to call, or raise", bet_or_check, "Please enter (call/raise)");
+				std::string decision = prompt_string("Would you like to call, or raise", bet_or_check, "Please enter (call/raise)");
 
-				if (decision.find("call")){
+				if (decision == "call"){
 					add_to_pot(p, current_bet - p.chips_bet);
 					player_done = true;
 				}
@@ -234,16 +235,15 @@ void FiveCardDraw::betting_phase(player& p){
 
 
 			auto bet_or_check = [](std::string str){
-				str = " " + str;
-				if (str.find("check") || str.find("bet")){
+				if (str == "check" || str == "bet"){
 					return true;
 				}
 				else
 					return false;
 			};
-			std::string decision = " " + prompt_string("Would you like to check, or bet", bet_or_check, "Please enter (check/bet)");
+			std::string decision = prompt_string("Would you like to check, or bet", bet_or_check, "Please enter (check/bet)");
 
-			if (decision.find("check")){
+			if (decision == "check"){
 				player_done = true;
 			}
 			else{
@@ -328,8 +328,10 @@ int FiveCardDraw::before_round(){
 	while (!gone_around_once && highest_better == nullptr){
 
 		betting_phase(*players[i]);
-		if (i + 1 == players.size())
+		if (i + 1 == players.size()){
+			std::cout << "gone around once" << std::endl;
 			gone_around_once = true;
+		}
 
 		i = (i + 1) % players.size();
 

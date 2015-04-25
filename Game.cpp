@@ -158,7 +158,7 @@ void Game::add_player(const char* name){
 				 return num;
 			 }
 			 else
-				 throw;
+				 std::cout << err_message << "\nTry again" << std::endl;
 		 }
 		 catch (...){
 			 std::cout << err_message << "\nTry again" << std::endl;
