@@ -44,11 +44,9 @@ public:
 
 	virtual void play_round();
 
-	virtual int before_turn(player &p);
-
-	virtual int turn_one(player &p);
-	virtual int middle_turn(player &p);
-	virtual int last_turn(player &p);
+	virtual int turn_one();
+	virtual int middle_turn();
+	virtual int last_turn();
 
 	virtual int turn(player &p);
 

@@ -57,78 +57,6 @@ void SevenCardStud::play_round(){
 	}
 }
 
-/*
-Not sure if required
-*/
-
-//Do everything that happens before a turn
-int SevenCardStud::before_turn(player &p){
-
-	if (p.will_fold)
-		return SUCCESS;
-
-	//Show the players cards
-	std::cout << "Player " << p.name << " turn" << std::endl;
-	std::cout << p.name << " : " << p.hand << std::endl;
-
-	size_t num_cards_to_discard = 0;
-
-	//If it's a real player
-	if (!p.isrobot){
-		bool valid_discards = false;
-
-		auto valid_range = [](int i){if (0 <= i && i < 5){ return true; } else return false; };
-		num_cards_to_discard = prompt_int("How many cards would you like to discard?\n", valid_range, "You can only enter numbers 0-4");
-
-
-		//Discard however many cards the user wanted to discard
-		while (num_cards_to_discard){
-
-			std::cout << "Cards:\n" << p.hand << std::endl;
-			size_t position = prompt_int("Which card would you like to discard?\n", "");
-
-			//Remove the card from the position specified
-			try{
-				Card actual_card = p.hand[position];
-				discard_deck.add_card(actual_card);
-				p.hand.remove_card(position);
-				--num_cards_to_discard;
-			}
-
-			//Catch exceptions
-			catch (int e){
-				switch (e){
-				case HANDOUTOFBOUNDS:
-					std::cout << "No card at that position\n" << std::endl;
-					break;
-				default:
-					std::cout << "Invalid Input\n" << std::endl;
-				}
-
-			}
-			catch (const std::invalid_argument& ia){
-				std::cout << "You must enter a number.\n" << ia.what() << std::endl;
-			}
-
-		}
-	}
-
-	//Figure out which cards for the auto player to discard
-	else{
-
-		p.get_decision();
-		for (auto i = p.card_discard_positions.begin(); i != p.card_discard_positions.end(); ++i){
-			Card actual_card = p.hand[*i];
-			discard_deck.add_card(actual_card);
-			p.hand.remove_card(*i);
-		}
-		p.clear_decision();
-
-	}
-	return SUCCESS;
-}
-
-
 
 void SevenCardStud::betting_phase(player& p){
 
@@ -148,8 +76,6 @@ void SevenCardStud::betting_phase(player& p){
 	std::cout << "Hand: " << p.hand;
 
 	if (!p.isrobot && !p.will_fold){
-
-
 
 		bool player_done = false;
 
@@ -288,45 +214,7 @@ int SevenCardStud::before_round(){
 	pot = 0;
 	highest_bet = 0;
 	main_deck.shuffle();
-	size_t start = dealer;
-	start = start % players.size();
-	int cards_to_deal = players.size() * initial_cards;
 
-
-
-	//Deal the face up cards
-	do{
-		(players[start])->hand << main_deck;
-		start = (start + 1) % players.size();
-		--cards_to_deal;
-	} while (cards_to_deal);
-	current_card += initial_cards;
-
-	start = dealer;
-	start = start % players.size();
-	int cards_to_deal = players.size() * face_down_cards;
-	//Deal the face down cards
-	do{
-		(players[start])->hand << main_deck;
-		(players[start])->hand.make_down(current_card);
-		start = (start + 1) % players.size();
-		--cards_to_deal;
-	} while (cards_to_deal);
-	current_card += initial_cards;
-
-
-	//Call turn one on every player
-	for (auto p = players.begin(); p != players.end(); p++){
-		turn_one(*(*p));
-	}
-
-	return SUCCESS;
-}
-
-/*
-Distributes ante, call betting phase
-*/
-int SevenCardStud::turn_one(player &p){
 	//ante reset folding
 	for each (auto p in players)
 	{
@@ -338,6 +226,39 @@ int SevenCardStud::turn_one(player &p){
 			remove_or_reset(*p);
 		}
 	}
+
+	return SUCCESS;
+}
+
+/*
+Deals initial cards, calls betting phase
+*/
+int SevenCardStud::turn_one(){
+
+	size_t start = dealer;
+	start = start % players.size();
+	int cards_to_deal = players.size() * initial_cards;
+
+	//Deal the face up cards
+	do{
+		(players[start])->hand << main_deck;
+		start = (start + 1) % players.size();
+		--cards_to_deal;
+	} while (cards_to_deal);
+	current_card += initial_cards;
+
+	start = dealer;
+	start = start % players.size();
+	cards_to_deal = players.size() * face_down_cards;
+
+	//Deal the face down cards
+	do{
+		(players[start])->hand << main_deck;
+		(players[start])->hand.make_down(current_card);
+		start = (start + 1) % players.size();
+		--cards_to_deal;
+	} while (cards_to_deal);
+	current_card += initial_cards;
 
 	//betting phase
 	int i = 0;
@@ -353,18 +274,46 @@ int SevenCardStud::turn_one(player &p){
 		i = (i + 1) % players.size();
 
 	}
+	return SUCCESS;
+}
+
+/*
+Deals each player one face down card and does betting
+*/
+int SevenCardStud::middle_turn(){
+	return SUCCESS;
+}
+
+/*
+Deals each player one face up card and does betting
+*/
+int SevenCardStud::last_turn(){
+	return SUCCESS;
 }
 
 //Run turn and afterturn for every player
 int SevenCardStud::round(){
-	for (auto p = players.begin(); p != players.end(); p++){
-		if (int turn_error = turn(*(*p))){
+	//Call turn one
+	if (int turn_error = turn_one()){
+		return turn_error;
+	}
+
+	//Call middle turn 3 times
+	for (int i = 0; i < 3; i++){
+		if (int turn_error = middle_turn()){
 			return turn_error;
 		}
-		if (int after_turn_error = after_turn(*(*p))){
+		/*if (int after_turn_error = after_turn()){
 			return after_turn_error;
-		}
+		}*/
 	}
+	//Call last turn
+	if (int turn_error = middle_turn()){
+		return turn_error;
+	}
+	/*if (int after_turn_error = after_turn()){
+		return after_turn_error;
+	}*/
 	return SUCCESS;
 }
 
