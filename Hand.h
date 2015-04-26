@@ -37,6 +37,8 @@ public:
 	bool operator<(const Hand& h);
 	Card& operator[](const size_t);
 
+	void make_down(const size_t);
+
 	std::string asString() const;
 
 	void remove_card(const size_t);

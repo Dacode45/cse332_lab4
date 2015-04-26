@@ -14,7 +14,8 @@ Defines function for playing rounds, including before, during and after. Where m
 //If both players exist, compare their hands
 const unsigned int this_games_ante = 1;
 const unsigned int initial_cards = 2;
-
+const unsigned int face_down_cards = 1;
+unsigned int current_card = 0;
 
 //Put all the cards in the deck
 SevenCardStud::SevenCardStud() :dealer(0), current_bet(0), ante(this_games_ante){
@@ -279,6 +280,8 @@ int SevenCardStud::after_turn(player &p){
 	return SUCCESS;
 }
 
+
+
 //Do deck shuffling and dealing
 int SevenCardStud::before_round(){
 
@@ -297,15 +300,38 @@ int SevenCardStud::before_round(){
 		start = (start + 1) % players.size();
 		--cards_to_deal;
 	} while (cards_to_deal);
+	current_card += initial_cards;
+
+	start = dealer;
+	start = start % players.size();
+	int cards_to_deal = players.size() * face_down_cards;
+	//Deal the face down cards
+	do{
+		(players[start])->hand << main_deck;
+		(players[start])->hand.make_down(current_card);
+		start = (start + 1) % players.size();
+		--cards_to_deal;
+	} while (cards_to_deal);
+	current_card += initial_cards;
 
 
-	//Call before turn on every player
+	//Call turn one on every player
+	for (auto p = players.begin(); p != players.end(); p++){
+		turn_one(*(*p));
+	}
 
+	return SUCCESS;
+}
+
+/*
+Distributes ante, call betting phase
+*/
+int SevenCardStud::turn_one(player &p){
 	//ante reset folding
 	for each (auto p in players)
 	{
 		p->will_fold = false;
-		if (p->chips > 0){
+		if (p->chips >= ante){
 			add_to_pot(*p, ante);
 		}
 		else{
@@ -327,14 +353,6 @@ int SevenCardStud::before_round(){
 		i = (i + 1) % players.size();
 
 	}
-
-	//before_turn
-	for (auto p = players.begin(); p != players.end(); p++){
-
-		before_turn(*(*p));
-	}
-
-	return SUCCESS;
 }
 
 //Run turn and afterturn for every player

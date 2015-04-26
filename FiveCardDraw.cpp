@@ -299,7 +299,7 @@ int FiveCardDraw::before_round(){
 	for each (auto p in players)
 	{
 		p->will_fold = false;
-		if (p->chips > 0){
+		if (p->chips >= ante){
 			add_to_pot(*p, ante);
 		}
 		else{

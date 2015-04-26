@@ -124,6 +124,15 @@ void Hand::remove_card(const size_t index){
 		throw HANDOUTOFBOUNDS;
 }
 
+//Make a card face down given the index
+void Hand::make_down(const size_t index){
+	if (index < this->size() && index >= 0){
+		this->cards[index].face_up = false;
+	}
+	else
+		throw HANDOUTOFBOUNDS;
+}
+
 //print out vaid card definition strings
 std::string Hand::asString() const{
 	std::stringstream to_return;

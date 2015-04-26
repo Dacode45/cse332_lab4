@@ -46,6 +46,10 @@ public:
 
 	virtual int before_turn(player &p);
 
+	virtual int turn_one(player &p);
+	virtual int middle_turn(player &p);
+	virtual int last_turn(player &p);
+
 	virtual int turn(player &p);
 
 	virtual int after_turn(player &p);
