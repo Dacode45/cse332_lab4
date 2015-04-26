@@ -63,9 +63,10 @@ int main(int argc, char* argv[])
 	//Try adding the two players from main tot he game
 	try{
 
-		game_instance->add_player(argv[args::player1]);
-		game_instance->add_player(argv[args::player2]);
+		for (int i = args::player1; i < argc; i++){
+			game_instance->add_player(argv[i]);
 
+		}
 	}
 	catch (int e){
 

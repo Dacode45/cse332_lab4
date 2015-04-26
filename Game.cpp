@@ -123,13 +123,13 @@ void Game::add_player(const char* name){
 		 
 		 
 		 if (predicate(answer)){
-			 return answer;
+			 return " " + answer;
 		 }
 		 else{
 			 std::cout << err_message << "\nTry again" << std::endl;
 		 }
 	 } while (!valid_input);
-	 return answer;
+	 return " " + answer;
  }
 
  /*

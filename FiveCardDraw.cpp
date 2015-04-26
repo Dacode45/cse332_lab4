@@ -127,63 +127,62 @@ int FiveCardDraw::before_turn(player &p){
 void FiveCardDraw::betting_phase(player& p){
 
 	if (p.will_fold){
-		std::cout << "this player folded " << p.hand;
+		std::cout << p.name << " folded " << p.hand << std::endl;
 		return;
 	}
 
 	//all other players folded
 	if (num_players_fold == players.size() - 1){
-		std::cout << "Other players all folded " << p.hand;
+		std::cout << "Other players all folded " << p.hand << std::endl;
 		return;
 	}
 		
 	std::cout << "Player " << p.name << " turn" << std::endl;
 	std::cout << "You have " << p.chips << " chips" << std::endl;
-	std::cout << "Hand: " << p.hand;
+	std::cout << "You are obligated to put in " << current_bet - p.chips_bet << " chips." << std::endl;
+	std::cout << "Hand: " << p.hand << std::endl;
 
 	if (!p.isrobot && !p.will_fold){
-
-		
 
 		bool player_done = false;
 
 		auto yes_or_no = [](std::string str){
-			return (str == "yes" || str == "no");
+			str = " " + str;
+			return (str.find("yes") != std::string::npos || str.find("no") != std::string::npos);
 		};
 
 		//First asks the user if they want to fold
-		std::string fold_decision = prompt_string("Would you like to fold", yes_or_no, "Please enter (yes/no)");
-		if (!fold_decision.compare("yes")){
-			std::cout << "Found a yes " << fold_decision << std::endl;
+		std::string fold_decision = " " + prompt_string("Would you like to fold", yes_or_no, "Please enter (yes/no)");
+		
+		if (fold_decision.find("yes") != std::string::npos){
+			std::cout << p.name << " decided to fold." << fold_decision.find("yes") << std::endl;
 
 			p.will_fold = true;
 			player_done = true;
 			num_players_fold++;
-			return;
 		}
 
-		std::cout << "has bet " << player_has_bet << std::endl;
-
+		
 		//theres a current bet on table
 		//player can either raise, call, or check if you have no money
 		if (player_has_bet){
-
 			//we have gone full circle;
-			if (highest_better != nullptr && p == *highest_better){
+			if ( p == *highest_better){
 				player_has_bet = false;
 				highest_better = nullptr;
 			}
+
 			if (player_done)
 				return;
 
 			//check if player has enough money
 			if (p.chips < current_bet - p.chips_bet){
-				add_to_pot(p, p.chips - p.chips_bet);
+				add_to_pot(p, current_bet - p.chips_bet);
 				std::cout << "You don't have enough money to call, you'll have to go all in" << std::endl;
 				player_done = true;
 			}
 			else if (p.chips == current_bet - p.chips_bet){//only have enough money to call
-				add_to_pot(p, p.chips - p.chips_bet);
+				add_to_pot(p, current_bet - p.chips_bet);
 				std::cout << "You don't have enough money to raise, you'll have to go all in" << std::endl;
 				player_done = true;
 			}
@@ -198,15 +197,21 @@ void FiveCardDraw::betting_phase(player& p){
 
 				std::string decision = prompt_string("Would you like to call, or raise", bet_or_check, "Please enter (call/raise)");
 
-				if (decision == "call"){
-					add_to_pot(p, current_bet - p.chips_bet);
+				if (decision.find("call") != std::string::npos){
+					add_to_pot(p, current_bet - p.chips_bet );
 					player_done = true;
 				}
 				else{
-					auto valid_raise = [](int i){
-						return(i == 1 || i == 2);
+					auto valid_raise = [&p](int i){
+						if (i == 1 || i == 2){
+							if (p.chips >= i){
+								return true;
+							}
+						}
+						return false;
 					};
-					int raise = prompt_int("How much would you like to raise", valid_raise, "You can only enter 1 or 2");
+					add_to_pot(p, current_bet - p.chips_bet);
+					int raise = prompt_int("How much would you like to raise", valid_raise, "You can only enter 1 or 2. (Hint: Do you have enough money to put in 2)?");
 					current_bet += raise;
 					highest_better = &p;
 					player_has_bet = true;
@@ -216,11 +221,18 @@ void FiveCardDraw::betting_phase(player& p){
 			}
 		}
 		else{ // players can bet or check
-			std::cout << "Inside else " << fold_decision << std::endl;
+		
+			if (player_done)
+				return;
 
+			if (p.chips < 1){
+				player_done = true;
+				std::cout << "You cant raise you must check" << std::endl;
+				return;
+			}
 
 			auto bet_or_check = [](std::string str){
-				if (str == "check" || str == "bet"){
+				if (str.find("check") != std::string::npos || str.find("bet") != std::string::npos){
 					return true;
 				}
 				else
@@ -228,12 +240,17 @@ void FiveCardDraw::betting_phase(player& p){
 			};
 			std::string decision = prompt_string("Would you like to check, or bet", bet_or_check, "Please enter (check/bet)");
 
-			if (decision == "check"){
+			if (decision.find("check") != std::string::npos){
 				player_done = true;
 			}
 			else{
-				auto valid_raise = [](int i){
-					return(i == 1 || i == 2);
+				auto valid_raise = [ &p](int i){
+					if (i == 1 || i == 2){
+						if (p.chips >= i){
+							return true;
+						}
+					}
+					return false;
 				};
 				int raise = prompt_int("How much would you like to bet", valid_raise, "You can only enter 1 or 2");
 				current_bet += raise;
@@ -245,7 +262,7 @@ void FiveCardDraw::betting_phase(player& p){
 		}
 	}
 	
-	std::cout << "You have " << p.chips << " chips\n\tand have bet " << p.chips_bet << std::endl;
+	std::cout << "You have " << p.chips << " chips and have bet " << p.chips_bet << std::endl;
 
 }
 
@@ -270,7 +287,7 @@ int FiveCardDraw::turn(player &p){
 
 //Print the players hand after the turn
 int FiveCardDraw::after_turn(player &p){
-	std::cout << std::endl << p.name << " : " << p.hand << std::endl;
+	
 	return SUCCESS;
 }
 
@@ -284,21 +301,12 @@ int FiveCardDraw::before_round(){
 	start = start % players.size();
 	int cards_to_deal = players.size() * num_cards_in_hand;
 
-	
-
-	//Deal to the players one at a time
-	do{
-		(players[start])->hand << main_deck;
-		start = (start + 1) % players.size();
-		--cards_to_deal;
-	} while (cards_to_deal);
-
-	//Call before turn on every player
-
 	//ante reset folding
 	for each (auto p in players)
 	{
 		p->will_fold = false;
+		num_players_fold = 0;
+		//add to ante
 		if (p->chips >= ante){
 			add_to_pot(*p, ante);
 		}
@@ -310,17 +318,28 @@ int FiveCardDraw::before_round(){
 	//betting phase
 	int i = 0;
 	bool gone_around_once = false;
-	while (!gone_around_once && highest_better == nullptr){
+	current_bet = ante;
+	while (!gone_around_once || highest_better != nullptr){
 
 		betting_phase(*players[i]);
 		if (i + 1 == players.size()){
-			std::cout << "gone around once" << std::endl;
 			gone_around_once = true;
 		}
 
 		i = (i + 1) % players.size();
 
 	}
+
+	//Deal to the players one at a time
+	do{
+		(players[start])->hand << main_deck;
+		start = (start + 1) % players.size();
+		--cards_to_deal;
+	} while (cards_to_deal);
+
+	//Call before turn on every player
+
+	
 
 	//before_turn
 	for (auto p = players.begin(); p != players.end(); p++){
@@ -341,6 +360,22 @@ int FiveCardDraw::round(){
 			return after_turn_error;
 		}
 	}
+
+	//betting phase
+	int i = 0;
+	bool gone_around_once = false;
+	while (!gone_around_once && highest_better == nullptr){
+
+		betting_phase(*players[i]);
+		if (i + 1 == players.size()){
+			gone_around_once = true;
+		}
+
+		i = (i + 1) % players.size();
+
+	}
+
+
 	return SUCCESS;
 }
 
@@ -400,6 +435,8 @@ int FiveCardDraw::after_round(){
 	int num_winners = winners.size();
 	int money_per_winner = pot / num_winners;
 
+	std::cout << "Total Pot was " << pot << std::endl;
+
 	for each (std::shared_ptr<player> p in winners)
 	{
 		p->chips += money_per_winner;
@@ -408,6 +445,18 @@ int FiveCardDraw::after_round(){
 	//Prints players hand types
 	for (auto p = temp_players.begin(); p != temp_players.end(); ++p){
 		std::cout << (*(*p)) << " : " << (*(*p)).hand << "\t" << hand_type((*p)->hand) << std::endl;
+
+		std::cout << (*p)->name << ":\n";
+		std::cout << "Has Won: " << (*p)->games_won << " games \n";
+		std::cout << "Has Lost: " << (*p)->games_lost << " games \n";
+		std::cout << "Has : " << (*p)->chips << " games \n";
+		if (!(*p)->will_fold){
+			std::cout << "Hand is : " << (*p)->hand << std::endl;
+		}
+		else{
+			std::cout << "Player folded can't show hand\n";
+		}
+
 
 		main_deck.collectCards((*(*p)).hand);
 	}
@@ -466,85 +515,50 @@ int FiveCardDraw::after_round(){
 
 
 	//See if any players want to leave
+	std::cout << "\n current players are " << print_players() << std::endl;
+	
+	auto yes_or_no = [](std::string str){
+		str = " " + str;
+		return (str.find("yes") != std::string::npos || str.find("no") != std::string::npos);
+	};
 	bool players_want_to_leave = true;
 	do{
-
-		std::cout << "\n current players are " << print_players() << std::endl;
-		std::cout << std::endl;
-		std::cout << "Any players want to leave (enter \"y\\n\")\n";
-		char answer;
-		std::cin >> answer;
-		std::cin.ignore();
-
-		if (answer == 'n'){
-
-			players_want_to_leave = false;
-
-		}
-
-		//If they want to leave, find out which person to remove
-		else{
-
-			std::cout << "What is the name of the player who wants to leave?\n";
-			std::string answer2;
-			std::getline(std::cin, answer2);
-			std::cin.ignore();
-			std::shared_ptr<player> p = find_player(answer2.c_str());
-
+		std::string leave_str = prompt_string("Any players want to leave (yes\no)", yes_or_no, "Enter yes or no ");
+		if (leave_str.find("yes") != std::string::npos){
+			std::string player_name = prompt_string("What is the player who wants to leave.", "Enter a player name");
+			std::shared_ptr<player> p = find_player(player_name.c_str());
 			if (p){
-
 				//save player data
 				//erase player pointer
 				std::cout << "trying to delete player" << std::endl;
 				p->save();
 				remove_player(p->name.c_str());
-
 			}
-
 		}
+		else
+			players_want_to_leave = false;
 
 	} while (players_want_to_leave);
-
+	
+	
 	bool players_want_to_join = false;
-
-	//Find out if any players want to join
 	do{
-
-		std::cout << "\n current players are " << print_players() << std::endl;
-		std::cout << std::endl;
-		std::cout << "Any players want to join? (enter \"y\\n\")\n";
-		char answer;
-		std::cin >> answer;
-		std::cin.ignore();
-
-		if (answer == 'n'){
-
-			players_want_to_join = false;
-
-		}
-
-		//Find out who the player is, add them to the game
-		else{
-
-			players_want_to_join = true;
-			std::cout << "What's the player name?\n";
-			std::string name;
-			std::getline(std::cin, name);
-			std::cin.ignore();
-
+		std::string leave_str = prompt_string("Any players want to join (yes\no)", yes_or_no, "Enter yes or no ");
+		if (leave_str.find("yes") != std::string::npos){
+			std::string player_name = prompt_string("What is the player who wants to join.", "Enter a player name");
 			try{
-
-				add_player(name.c_str());
-
+				add_player(player_name.c_str());
 			}
 			catch (int e){
-
 				handleErrMessages(e);
 			}
-
 		}
+		else
+			players_want_to_join = false;
 
 	} while (players_want_to_join);
+
+	std::cout << "\n current players are " << print_players() << std::endl;
 
 
 	return SUCCESS;
