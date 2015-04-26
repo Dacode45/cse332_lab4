@@ -16,6 +16,8 @@ const unsigned int this_games_ante = 1;
 const unsigned int initial_cards = 2;
 const unsigned int face_down_cards = 1;
 unsigned int current_card = 0;
+enum turns{first, second, third, fourth, fifth};
+turns current_turn;
 
 //Put all the cards in the deck
 SevenCardStud::SevenCardStud() :dealer(0), current_bet(0), ante(this_games_ante){
@@ -289,6 +291,7 @@ Deals each player one face up card and does betting
 */
 int SevenCardStud::last_turn(){
 	return SUCCESS;
+
 }
 
 //Run turn and afterturn for every player
