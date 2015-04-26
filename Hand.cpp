@@ -127,8 +127,14 @@ void Hand::remove_card(const size_t index){
 //print out vaid card definition strings
 std::string Hand::asString() const{
 	std::stringstream to_return;
+
 	for (auto i = this->cards.begin(); i != cards.end(); i++){
-		to_return << Card::rankMap[i->rank] << Card::suitMap[i->suit] << " ";
+		if (i->face_up){
+			to_return << Card::rankMap[i->rank] << Card::suitMap[i->suit] << " ";
+		}
+		else{
+			to_return << "*";
+		}
 	}
 	return to_return.str();
 }

@@ -180,3 +180,41 @@ void Game::add_player(const char* name){
 Game::~Game(){
 		//Doesn't do anything
 	}
+
+
+/*
+Asks a player if they want more chips
+If they do call reset, else remove them. Auto removes robots
+*/
+void Game::remove_or_reset(player&p){
+	if (!p.isrobot){
+		std::cout << "Hi. You're out of money friend. Would you like some more (yes/no)" << std::endl;
+		std::string more_money;
+		std::cin >> more_money;
+		if (more_money.find("no")){
+			std::cout << "Goodbye then \n";
+			remove_player(p.name.c_str());
+		}
+		else
+			p.reset();
+	}
+	else
+		remove_player(p.name.c_str());
+}
+
+
+/*
+Compares two players by the poker rank of their hands
+*/
+bool Game::playerComparator(std::shared_ptr<player> p1, std::shared_ptr<player> p2){
+	if (!p1){
+		return false;
+	}
+	else{
+		if (!p2){
+			return true;
+		}
+		return poker_rank(p1->hand, p2->hand);
+	}
+
+}

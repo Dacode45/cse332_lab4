@@ -18,17 +18,27 @@ struct Card{
 	static const char* rankMap[14];
 	SUIT suit;
 	RANK rank;
+	bool face_up;
 
 	//Default constructor sets suit and rank to zero/null
 	Card(){
 		suit = SUIT::empty;
 		rank = RANK::zero;
+		face_up = true;
 	}
 	
 	//Constructor that takes in suit and rank
 	Card(SUIT s, RANK r){
 		suit = s;
 		rank = r;
+		face_up = true;
+	}
+
+	//New constructor for specifying face up
+	Card(SUIT s, RANK r, bool up){
+		suit = s;
+		rank = r;
+		face_up = up;
 	}
 
 	

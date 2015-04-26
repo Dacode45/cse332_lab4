@@ -24,7 +24,7 @@ protected:
 	static std::shared_ptr < Game > game;
 	Deck main_deck;
 	std::vector<std::shared_ptr<player>> players;
-	
+	static bool playerComparator(std::shared_ptr<player> p1, std::shared_ptr<player> p2);
 	
 
 //Define public methods for game class
@@ -53,6 +53,8 @@ public:
 	virtual int before_round(){ return SUCCESS; }
 	virtual int round(){ return SUCCESS; }
 	virtual int after_round(){ return SUCCESS; }
+
+	virtual void remove_or_reset(player& p);
 
 	virtual void add_to_pot(player&, unsigned int amount);
 

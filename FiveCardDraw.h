@@ -59,7 +59,7 @@ public:
 
 	virtual void betting_phase(player& p);
 
-	void remove_or_reset(player& p);
+	//virtual void remove_or_reset(player& p);
 
 };
 

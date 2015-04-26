@@ -12,26 +12,11 @@ Defines function for playing rounds, including before, during and after. This is
 #include <iostream>
 
 //If both players exist, compare their hands
-const unsigned int this_games_anti = 1;
+const unsigned int this_games_ante = 1;
 
-/*
-Compares two players by the poker rank of their hands
-*/
-bool FiveCardDraw::playerComparator(std::shared_ptr<player> p1, std::shared_ptr<player> p2){
-	if (!p1){
-		return false;
-	}
-	else{
-		if (!p2){
-			return true;
-		}
-		return poker_rank(p1->hand, p2->hand);
-	}
-
-}
 
 //Give the dealer all the cards
-FiveCardDraw::FiveCardDraw() :dealer(0), current_bet(0), ante(this_games_anti){
+FiveCardDraw::FiveCardDraw() :dealer(0), current_bet(0), ante(this_games_ante){
 
 	pot = 0;
 	for (int suit = 1; suit <= 4; suit++){
@@ -372,7 +357,7 @@ int FiveCardDraw::after_round(){
 	std::copy_if(players.begin(), players.end(), std::back_inserter(temp_players), strip_folders);
 
 	//Sort the players by hand rank so the winner is first
-	std::sort(temp_players.begin(), temp_players.end(), &FiveCardDraw::playerComparator);
+	std::sort(temp_players.begin(), temp_players.end(), &Game::playerComparator);
 
 	//Give each player their wins and losses and assign probabilities for players in case they are auto
 	unsigned int winnerhand;
@@ -563,24 +548,4 @@ int FiveCardDraw::after_round(){
 
 
 	return SUCCESS;
-}
-
-/*
-Asks a player if they want more chips
-If they do call reset, else remove them. Auto removes robots
-*/
-void FiveCardDraw::remove_or_reset(player&p){
-	if(!p.isrobot){
-		std::cout << "Hi. You're out of money friend. Would you like some more (yes/no)" << std::endl;
-		std::string more_money;
-		std::cin >> more_money;
-		if (more_money.find("no")){
-			std::cout << "Goodbye then \n";
-			remove_player(p.name.c_str());
-		}
-		else
-			p.reset();
-	}
-	else
-		remove_player(p.name.c_str());
 }
