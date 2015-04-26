@@ -8,6 +8,7 @@ Defines methods declared in game.cpp for playing a generic game
 #include "stdafx.h"
 #include "Game.h"
 #include "FiveCardDraw.h"
+#include "SevenCardStud.h"
 
 
 std::shared_ptr<Game> Game::game;
@@ -44,12 +45,16 @@ std::string Game::print_players(){
 		throw game_already_started;
 
 	std::string game_type = type;
-	if (game_type.find("FiveCardDraw")){
-
-		throw unknown_game;
-
+	if (game_type == "FiveCardDraw"){
+		game = std::static_pointer_cast<Game>(std::make_shared<FiveCardDraw>());
 	}
-	game = std::static_pointer_cast<Game>(std::make_shared<FiveCardDraw>());
+	else if (game_type == "SevenCardStud"){
+		game = std::static_pointer_cast<Game>(std::make_shared<SevenCardStud>());
+	}
+	else{
+		throw unknown_game;
+	}
+		
 
 }
 

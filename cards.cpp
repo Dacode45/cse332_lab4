@@ -312,10 +312,32 @@ bool handComparator(std::vector<Card>& hand1, std::vector<Card>& hand2){
 	return hand1_value < hand2_value;
 }
 
+/*
+Factorial function
+*/
+int factorial(int n){
+	return (n == 1 || n == 0) ? 1 : factorial(n - 1) * n;
+}
+
+/*
+Compares two hands. If they have more than 5 cards compares permutations of hands
+*/
 bool poker_rank(const Hand& h1, const Hand& h2){
-	 
-	 unsigned int h1_value = checkHand(h1.getCards());
-	 unsigned int h2_value = checkHand(h2.getCards());
+	unsigned int h1_value = 0;
+	unsigned int cards_in_hand_one = h1.getCards().size();
+	for (int i = 0; i < (factorial(cards_in_hand_one) / factorial(5)); ++i){
+		if (checkHand(h1.getCards()) > h1_value){
+			h1_value = checkHand(h1.getCards());
+		}
+	}
+	unsigned int h2_value = 0;
+	unsigned int cards_in_hand_two = h1.getCards().size();
+	for (int i = 0; i < (factorial(cards_in_hand_two) / factorial(5)); ++i){
+		if (checkHand(h2.getCards()) > h2_value){
+			h2_value = checkHand(h1.getCards());
+		}
+	}
+
 	 return h1_value > h2_value;
 }
 

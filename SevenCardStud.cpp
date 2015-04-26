@@ -63,61 +63,62 @@ void SevenCardStud::play_round(){
 void SevenCardStud::betting_phase(player& p){
 
 	if (p.will_fold){
-		std::cout << "this player folded " << p.hand;
+		std::cout << p.name << " folded " << p.hand << std::endl;
 		return;
 	}
 
 	//all other players folded
 	if (num_players_fold == players.size() - 1){
-		std::cout << "Other players all folded " << p.hand;
+		std::cout << "Other players all folded " << p.hand << std::endl;
 		return;
 	}
 
 	std::cout << "Player " << p.name << " turn" << std::endl;
 	std::cout << "You have " << p.chips << " chips" << std::endl;
-	std::cout << "Hand: " << p.hand;
+	std::cout << "You are obligated to put in " << current_bet - p.chips_bet << " chips." << std::endl;
+	std::cout << "Hand: " << p.hand << std::endl;
 
 	if (!p.isrobot && !p.will_fold){
 
 		bool player_done = false;
 
 		auto yes_or_no = [](std::string str){
-			return (str == "yes" || str == "no");
+			str = " " + str;
+			return (str.find("yes") != std::string::npos || str.find("no") != std::string::npos);
 		};
 
 		//First asks the user if they want to fold
-		std::string fold_decision = prompt_string("Would you like to fold", yes_or_no, "Please enter (yes/no)");
-		if (!fold_decision.compare("yes")){
-			std::cout << "Found a yes " << fold_decision << std::endl;
+		std::string fold_decision = " " + prompt_string("Would you like to fold", yes_or_no, "Please enter (yes/no)");
+
+		if (fold_decision.find("yes") != std::string::npos){
+			std::cout << p.name << " decided to fold." << fold_decision.find("yes") << std::endl;
 
 			p.will_fold = true;
 			player_done = true;
 			num_players_fold++;
-			return;
 		}
 
-		std::cout << "has bet " << player_has_bet << std::endl;
 
 		//theres a current bet on table
 		//player can either raise, call, or check if you have no money
 		if (player_has_bet){
-
 			//we have gone full circle;
-			if (highest_better != nullptr && p == *highest_better){
+			if (p == *highest_better){
 				player_has_bet = false;
 				highest_better = nullptr;
 			}
+
 			if (player_done)
 				return;
 
 			//check if player has enough money
 			if (p.chips < current_bet - p.chips_bet){
-				add_to_pot(p, p.chips - p.chips_bet);
+				add_to_pot(p, current_bet - p.chips_bet);
 				std::cout << "You don't have enough money to call, you'll have to go all in" << std::endl;
 				player_done = true;
 			}
 			else if (p.chips == current_bet - p.chips_bet){//only have enough money to call
-				add_to_pot(p, p.chips - p.chips_bet);
+				add_to_pot(p, current_bet - p.chips_bet);
 				std::cout << "You don't have enough money to raise, you'll have to go all in" << std::endl;
 				player_done = true;
 			}
@@ -132,15 +133,21 @@ void SevenCardStud::betting_phase(player& p){
 
 				std::string decision = prompt_string("Would you like to call, or raise", bet_or_check, "Please enter (call/raise)");
 
-				if (decision == "call"){
+				if (decision.find("call") != std::string::npos){
 					add_to_pot(p, current_bet - p.chips_bet);
 					player_done = true;
 				}
 				else{
-					auto valid_raise = [](int i){
-						return(i == 1 || i == 2);
+					auto valid_raise = [&p](unsigned int i){
+						if (i == 1 || i == 2){
+							if (p.chips >= i){
+								return true;
+							}
+						}
+						return false;
 					};
-					int raise = prompt_int("How much would you like to raise", valid_raise, "You can only enter 1 or 2");
+					add_to_pot(p, current_bet - p.chips_bet);
+					int raise = prompt_int("How much would you like to raise", valid_raise, "You can only enter 1 or 2. (Hint: Do you have enough money to put in 2)?");
 					current_bet += raise;
 					highest_better = &p;
 					player_has_bet = true;
@@ -150,11 +157,18 @@ void SevenCardStud::betting_phase(player& p){
 			}
 		}
 		else{ // players can bet or check
-			std::cout << "Inside else " << fold_decision << std::endl;
 
+			if (player_done)
+				return;
+
+			if (p.chips < 1){
+				player_done = true;
+				std::cout << "You cant raise you must check" << std::endl;
+				return;
+			}
 
 			auto bet_or_check = [](std::string str){
-				if (str == "check" || str == "bet"){
+				if (str.find("check") != std::string::npos || str.find("bet") != std::string::npos){
 					return true;
 				}
 				else
@@ -162,12 +176,17 @@ void SevenCardStud::betting_phase(player& p){
 			};
 			std::string decision = prompt_string("Would you like to check, or bet", bet_or_check, "Please enter (check/bet)");
 
-			if (decision == "check"){
+			if (decision.find("check") != std::string::npos){
 				player_done = true;
 			}
 			else{
-				auto valid_raise = [](int i){
-					return(i == 1 || i == 2);
+				auto valid_raise = [&p](unsigned int i){
+					if (i == 1 || i == 2){
+						if (p.chips >= i){
+							return true;
+						}
+					}
+					return false;
 				};
 				int raise = prompt_int("How much would you like to bet", valid_raise, "You can only enter 1 or 2");
 				current_bet += raise;
@@ -179,7 +198,7 @@ void SevenCardStud::betting_phase(player& p){
 		}
 	}
 
-	std::cout << "You have " << p.chips << " chips\n\tand have bet " << p.chips_bet << std::endl;
+	std::cout << "You have " << p.chips << " chips and have bet " << p.chips_bet << std::endl;
 
 }
 
@@ -283,6 +302,34 @@ int SevenCardStud::turn_one(){
 Deals each player one face down card and does betting
 */
 int SevenCardStud::middle_turn(){
+
+	size_t start = dealer;
+	start = start % players.size();
+	int cards_to_deal = players.size() * face_down_cards;
+
+	//Deal the face down cards
+	do{
+		(players[start])->hand << main_deck;
+		(players[start])->hand.make_down(current_card);
+		start = (start + 1) % players.size();
+		--cards_to_deal;
+	} while (cards_to_deal);
+	current_card += initial_cards;
+
+	//betting phase
+	int i = 0;
+	bool gone_around_once = false;
+	while (!gone_around_once && highest_better == nullptr){
+
+		betting_phase(*players[i]);
+		if (i + 1 == players.size()){
+			std::cout << "gone around once" << std::endl;
+			gone_around_once = true;
+		}
+
+		i = (i + 1) % players.size();
+
+	}
 	return SUCCESS;
 }
 
@@ -290,6 +337,33 @@ int SevenCardStud::middle_turn(){
 Deals each player one face up card and does betting
 */
 int SevenCardStud::last_turn(){
+
+	size_t start = dealer;
+	start = start % players.size();
+	int cards_to_deal = players.size() * face_down_cards;
+
+	//Deal the last face up card
+	do{
+		(players[start])->hand << main_deck;
+		start = (start + 1) % players.size();
+		--cards_to_deal;
+	} while (cards_to_deal);
+	current_card += initial_cards;
+
+	//betting phase
+	int i = 0;
+	bool gone_around_once = false;
+	while (!gone_around_once && highest_better == nullptr){
+
+		betting_phase(*players[i]);
+		if (i + 1 == players.size()){
+			std::cout << "gone around once" << std::endl;
+			gone_around_once = true;
+		}
+
+		i = (i + 1) % players.size();
+
+	}
 	return SUCCESS;
 
 }
